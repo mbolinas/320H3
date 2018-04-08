@@ -1,12 +1,12 @@
 package pkgMain;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map.Entry;
 import java.util.Set;
 
@@ -22,6 +22,7 @@ public class Cmain {
 		HashMap<String, City> cities = new HashMap<>();
 		
 		int example_count = Integer.parseInt(line);
+		int answers[] = new int[example_count];
 		
 		for(int j = 0; j < example_count; j++) {
 			line = reader.readLine();
@@ -41,14 +42,20 @@ public class Cmain {
 			}
 			line = reader.readLine();
 			String destination[] = line.split(" ");
-			System.out.println(calculate_fuel_usage(cities.get(destination[0]), cities.get(destination[1])));
+			answers[j] = (calculate_fuel_usage(cities.get(destination[0]), cities.get(destination[1])));
+		}
+		reader.close();
+		
+		
+		BufferedWriter writer = new BufferedWriter(new FileWriter(output));
+		for(int i = 0; i < answers.length; i++) {
+			writer.write("Test Case " + (i + 1));
+			writer.newLine();
+			writer.write("Vladimir needs " + answers[i] + " litre(s) of blood");
+			writer.newLine();
 		}
 		
-		
-		
-		
-		
-		
+		writer.close();
 		
 		
 		
