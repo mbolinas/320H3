@@ -18,85 +18,81 @@ public class Cmain {
 	public static void main(String[] args) throws IOException{
 		
 		BufferedReader reader = new BufferedReader(new FileReader(input));
+		BufferedWriter writer = new BufferedWriter(new FileWriter(output));
 		String line = reader.readLine();
-		HashMap<String, City> cities = new HashMap<>();
 		
 		int example_count = Integer.parseInt(line);
-		int answers[] = new int[example_count];
 		
 		for(int j = 0; j < example_count; j++) {
+			HashMap<String, City> cities = new HashMap<>();
+			
 			line = reader.readLine();
 			int train_count = Integer.parseInt(line);
+			
 			
 			for(int i = 0; i < train_count; i++) {
 				line = reader.readLine();
 				String result[] = line.split(" ");
+
+				//Create the cities and put them in the hashmap if they don't exist yet
 				if(!cities.containsKey(result[0])) {
 					cities.put(result[0], new City(result[0]));
 				}
 				if(!cities.containsKey(result[1])) {
 					cities.put(result[1], new City(result[1]));
 				}
+				
+				//Make the train, only put it in if the departure and arrival times are all within 6pm to 6am
 				Train t = new Train(Integer.parseInt(result[2]), Integer.parseInt(result[3]));
-				cities.get(result[0]).adjacent_cities.put(cities.get(result[1]), t);	
+				if((t.start_time >= 18 || t.start_time <= 6) 
+						&& ((t.start_time + t.length) % 24 <= 6 || (t.start_time + t.length) % 24 >= 18)) {
+					cities.get(result[0]).adjacent_cities.put(cities.get(result[1]), t);
+				}
 			}
+			
+			//Writing to file
 			line = reader.readLine();
 			String destination[] = line.split(" ");
-			answers[j] = (calculate_fuel_usage(cities.get(destination[0]), cities.get(destination[1])));
+			writer.write("Test Case " + (j + 1));
+			writer.newLine();
+			int ans = calculate_blood_usage(cities.get(destination[0]), cities.get(destination[1]));
+			if(ans == -1) {
+				writer.write("There is no route Vladimir can take");
+			}
+			else {
+				writer.write("Vladimir needs " + ans + " litre(s) of blood");
+			}
+			writer.newLine();
 		}
 		reader.close();
-		
-		
-		BufferedWriter writer = new BufferedWriter(new FileWriter(output));
-		for(int i = 0; i < answers.length; i++) {
-			writer.write("Test Case " + (i + 1));
-			writer.newLine();
-			writer.write("Vladimir needs " + answers[i] + " litre(s) of blood");
-			writer.newLine();
-		}
-		
 		writer.close();
-		
-		
-		
-//		City l = new City("lugoj");
-//		City s = new City("sibiu");
-//		City m = new City("medias");
-//		City r = new City("reghin");
-//		City b = new City("bacau");
-//		
-//		//l.add_train(s, new Train(12, 6));
-//		l.add_train(s, new Train(18, 6));
-//		l.add_train(s, new Train(24, 5));
-//		l.add_train(m, new Train(22, 8));
-//		l.add_train(m, new Train(18, 8));
-//		//l.add_train(r, new Train(17, 4));
-//		
-//		s.add_train(r, new Train(19, 9));
-//		s.add_train(m, new Train(20, 3));
-//		
-//		r.add_train(m, new Train(20, 4));
-//		r.add_train(b, new Train(0, 6));
-//		
-//		System.out.println(calculate_fuel_usage(l,b));
 	}
 	
 	
-	
-	public static int calculate_fuel_usage(City start, City end) {
+	/*
+	 * Modified Djikstra's
+	 * Changes to Djikstra's:
+	 * 
+	 * Each node now has a corresponding arrival time as well as a distance
+	 * The arrival time is used to calculate the distance between adjacent nodes
+	 * 
+	 * Distance = travel time + time between arrival and train departure + source distance
+	 */
+	public static int calculate_blood_usage(City start, City end) {
+		//Start city has distance 0, and we start at 6pm because that's when good ol' Vlad can start taking trains
 		start.distance = 0;
-		
+		start.time = 18;
 		Set<City> settled = new HashSet<>();
 		Set<City> unsettled = new HashSet<>();
 		unsettled.add(start);
-		start.time = 18;
+
 		
-		
+		//While we have cities that we gotta check out
 		while(unsettled.size() > 0) {
 			City current_city = find_closest_city(unsettled);
 			unsettled.remove(current_city);
 			
-			
+			//For every outgoing train in the current city, update the distance to the destination cities
 			for(Entry <City, Train> adjacency_pair : current_city.adjacent_cities.entrySet()) {
 				City adjacent_city = adjacency_pair.getKey();
 				Train t = adjacency_pair.getValue();
@@ -104,16 +100,19 @@ public class Cmain {
 				
 				
 				if(settled.contains(adjacent_city) == false) {
-					min_distance(adjacent_city, t, current_city);
+					min_distance(current_city, adjacent_city, t);
 					unsettled.add(adjacent_city);
 				}
 			}
 			settled.add(current_city);
+			//If we found the final destination city, we can stop because it's the shortest path
+			//At least, I think we can
 			if(current_city.name.equals(end.name)) {
 				unsettled.clear();
 			}
 		}
 		
+		//If the end city could not be reached
 		if(end.distance == Integer.MAX_VALUE) {
 			return -1;
 		}
@@ -136,21 +135,14 @@ public class Cmain {
 		return closest_city;
 	}
 	
-	public static void min_distance(City eval, Train t, City source) {
+	public static void min_distance(City source, City eval, Train t) {
 		int source_distance = source.distance;
-		if(source.time == -1) {
-			System.out.println("TIME ERROR");
-		}
+
+		//+24 and %24 to account for when time crosses over past midnight (23 to 0)
+		int wait_time = (t.start_time - source.time + 24) % 24;
 		
-		int wait_time = t.start_time - source.time;
-		if(wait_time < 0) {
-			wait_time += 24;
-		}
-		
-		if(eval.distance > source_distance + t.length + wait_time) {
+		if(source_distance + t.length + wait_time < eval.distance) {
 			eval.distance = source_distance + t.length + wait_time;
-			//List<City> c = source.shortestPath;
-			//LinkedList<City> shortest_path = new LinkedList<>(source.shortestPath());
 			eval.time = (t.start_time + t.length) % 24;
 		}
 	}
