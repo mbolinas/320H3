@@ -1,3 +1,9 @@
+/*
+ * @Marc Bolinas
+ * CISC320 HW3
+ * 4/8/18
+ */
+
 package pkgMain;
 
 import java.io.BufferedReader;
