@@ -114,9 +114,11 @@ public class Cmain {
 			settled.add(current_city);
 			//If we found the final destination city, we can stop because it's the shortest path
 			//At least, I think we can
-			if(current_city.name.equals(end.name)) {
-				unsettled.clear();
-			}
+			//I commented it out because I don't like it
+			
+//			if(current_city.name.equals(end.name)) {
+//				unsettled.clear();
+//			}
 		}
 		
 		//If the end city could not be reached
