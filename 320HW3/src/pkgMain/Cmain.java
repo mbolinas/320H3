@@ -51,7 +51,8 @@ public class Cmain {
 				//Make the train, only put it in if the departure and arrival times are all within 6pm to 6am
 				Train t = new Train(Integer.parseInt(result[2]), Integer.parseInt(result[3]));
 				if((t.start_time >= 18 || t.start_time <= 6) 
-						&& ((t.start_time + t.length) % 24 <= 6 || (t.start_time + t.length) % 24 >= 18)) {
+						&& ((t.start_time + t.length) % 24 <= 6 || (t.start_time + t.length) % 24 >= 18)
+						&& t.length <= (6 - t.start_time + 24) % 24) {
 					cities.get(result[0]).adjacent_cities.put(cities.get(result[1]), t);
 				}
 			}
